@@ -1,99 +1,57 @@
-from collections import defaultdict
+from collections import defaultdict, deque
 
-def dfs_traversal(tree, start, search):
-    visited = set()
-    stack = [start]
-    traversal = []
-
-    while stack:
-        node = stack.pop()
+def bfs(tree, start, search):
+    visited, queue, path = set(), deque([start]), []
+    while queue:
+        node = queue.popleft()
         if node in visited:
             continue
         visited.add(node)
-        traversal.append(node)
+        path.append(node)
         if node == search:
-            return traversal
-        # Add neighbors to stack in reverse order to maintain correct order in traversal
-        stack.extend(reversed(tree[node]))
-    
-    return traversal
+            return path
+        queue.extend(n for n in tree[node] if n not in visited)
+    return path
 
 def print_tree(tree, start):
-    def get_level(node, level=0, levels=None):
-        if levels is None:
-            levels = defaultdict(list)
+    def get_level(node, level=0, levels=defaultdict(list)):
         levels[level].append(node)
         for child in sorted(tree[node]):
             get_level(child, level + 1, levels)
         return levels
-    
-    levels = get_level(start)
-    max_width = len(levels[max(levels)]) * 4
-    
+    levels, max_width = get_level(start), max(map(len, get_level(start).values())) * 4
     for level in sorted(levels):
-        level_nodes = levels[level]
         spacing = max_width // (2 ** (level + 1))
-        line = (" " * spacing).join(f"{node:4}" for node in level_nodes)
-        print(" " * (max_width // 2 - len(line) // 2) + line)
+        print(" " * (max_width // 2 - len(levels[level]) * 2) + (" " * spacing).join(f"{node:4}" for node in levels[level]))
 
 def main():
     while True:
         try:
             n = int(input("Enter the number of nodes: "))
-            if n <= 0:
-                raise ValueError("Enter positive integers only!")
-            tree = defaultdict(list)
-            nodes = set()
-            break
+            if n > 0:
+                break
+            print("Please enter a positive integer.")
         except ValueError:
-            print("Please enter a valid positive integer.")
-    
-    print("Enter each node and its adjacent nodes (space-separated) in each line:")
-    
+            print("Invalid input. Please enter a valid positive integer.")
+
+    tree = defaultdict(list)
+    print("Enter each node and its adjacent nodes (space-separated):")
     for _ in range(n):
-        while True:
-            line = input().strip()
-            if not line:
-                print("Please enter the node and its adjacent nodes.")
-                continue
-            
-            parts = line.split()
-            if len(parts) < 1:
-                print("Invalid input. A node must be specified.")
-                continue
+        node, *children = input().strip().split()
+        tree[node].extend(children)
 
-            node = parts[0]
-            children = parts[1:]
-            tree[node].extend(children)
-            nodes.add(node)
-            nodes.update(children)
-            break
-
-    if not nodes:
-        print("No nodes were entered.")
-        return
+    start_node = list(tree.keys())[0]
+    print("\nAvailable nodes:", list(tree.keys()))
     
-    l = list(tree.keys())
-    start_node = l[0]
-    print("\nAvailable nodes:")
-    print(l)
-    
-    while True:
-        search_node = input("\nEnter the search node: ")
-        if search_node in l:
-            # Perform DFS traversal and path finding
-            dfs_traversal_result = dfs_traversal(tree, start_node, search_node)
-            
-            if dfs_traversal_result:
-                print("Path: ",' -> '.join(dfs_traversal_result))
-            else:
-                print("Node not found in traversal.")
-            break
-        else:
-            print(f"Node {search_node} not found in the tree. Please try again.")
+    search_node = input("\nEnter the search node: ")
+    if search_node in tree:
+        path = bfs(tree, start_node, search_node)
+        print("Path:", ' -> '.join(path))
+    else:
+        print(f"Node {search_node} not found in the tree.")
     
     print("\nTree Structure:")
     print_tree(tree, start_node)
 
-if _name_ == "_main_":
+if __name__ == "__main__":
     main()
